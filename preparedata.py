@@ -18,13 +18,13 @@ import math
 
 class PrepareData():
     def __init__(self):
-        
+
         self.batch_size = 32
         self.labels_offset = 0
-        
-        
+
+
         self.matched_thresholds = 0.5 #threshold for anchor matching strategy
-      
+        self.data_format = 'NCHW'
         
        
         
@@ -33,9 +33,9 @@ class PrepareData():
     def __preprocess_data(self, image, labels, bboxes):
         out_shape = g_ssd_model.img_shape
         if self.is_training_data:
-            image, labels, bboxes = preprocess_for_train(image, labels, bboxes, out_shape = out_shape)
+            image, labels, bboxes = preprocess_for_train(image, labels, bboxes, out_shape = out_shape, data_format= self.data_format)
         else:
-            image, labels, bboxes, _ = preprocess_for_eval(image, labels, bboxes, out_shape = out_shape)
+            image, labels, bboxes, _ = preprocess_for_eval(image, labels, bboxes, out_shape = out_shape, data_format= self.data_format)
         return image, labels, bboxes
     def __get_images_labels_bboxes(self,data_sources, num_samples,is_training_data):
         

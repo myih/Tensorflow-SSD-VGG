@@ -181,9 +181,9 @@ class SSDModel():
                     return sc
 
     
-    def get_model(self,inputs, weight_decay=0.0005,is_training=False):
+    def get_model(self,inputs, weight_decay=0.0005,is_training=False,data_format='NHWC'):
         # End_points collect relevant activations for external use.
-        arg_scope = self.__arg_scope(weight_decay=weight_decay)
+        arg_scope = self.__arg_scope(weight_decay=weight_decay,data_format=data_format)
         with slim.arg_scope(arg_scope):
             end_points = {}
             with tf.variable_scope('vgg_16', [inputs]):
@@ -213,9 +213,10 @@ class SSDModel():
             # Additional SSD blocks.
             keep_prob=0.8
             with slim.arg_scope([slim.conv2d],
-                            activation_fn=None):
+                            activation_fn=None, data_format=data_format):
                 with slim.arg_scope([slim.batch_norm],
-                            activation_fn=tf.nn.relu, is_training=is_training,updates_collections=None):
+                            activation_fn=tf.nn.relu, is_training=is_training,updates_collections=None，
+                            data_format=data_format):
                     with slim.arg_scope([slim.dropout],
                             is_training=is_training,keep_prob=keep_prob):
                         with tf.variable_scope(self.model_name):

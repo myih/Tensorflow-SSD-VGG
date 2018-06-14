@@ -16,7 +16,7 @@
 """
 import os
 from pprint import pprint
-
+from __future__ import print_function
 import tensorflow as tf
 from tensorflow.contrib.slim.python.slim.data import parallel_reader
 

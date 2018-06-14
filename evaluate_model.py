@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import tensorflow.contrib.slim as slim
 import numpy as np
 import math
+import os
+from compiler.ast import flatten
 from preparedata import PrepareData
 from nets.ssd import g_ssd_model
 import tf_extended as tfe
@@ -25,8 +27,14 @@ class EvaluateModel(PrepareData):
         
         self.checkpoint_path =  None
         self.eval_dir = None
-        
-        
+
+        self.num_inter_threads = 0
+        self.num_intra_threads = 0
+        self.mkl = False 
+        self.kmp_blocktime = 1
+        self.kmp_affinity = 'granularity=fine,verbose,compact,1,0'
+        self.kmp_settings = 1
+
         return
     
     
@@ -51,7 +59,7 @@ class EvaluateModel(PrepareData):
        
         
         #get model outputs
-        predictions, localisations, logits, end_points = g_ssd_model.get_model(image)
+        predictions, localisations, logits, end_points = g_ssd_model.get_model(image, data_format= self.data_format)
         
         
             
@@ -66,7 +74,9 @@ class EvaluateModel(PrepareData):
         
         
         config = tf.ConfigProto(log_device_placement=False,
-                                gpu_options=gpu_options)
+                                gpu_options=gpu_options,
+                                inter_op_parallelism_threads=self.num_inter_threads,
+                                intra_op_parallelism_threads=self.num_intra_threads)
         
         
         if not self.eval_loop:
@@ -83,7 +93,7 @@ class EvaluateModel(PrepareData):
                 checkpoint_path=checkpoint_file,
                 logdir=self.eval_dir,
                 num_evals=num_batches,
-                eval_op=list(names_to_updates.values()) ,
+                eval_op=flatten(list(names_to_updates.values())) ,
                 session_config=config,
                 variables_to_restore=variables_to_restore)
             # Log time spent.
@@ -99,7 +109,7 @@ class EvaluateModel(PrepareData):
                 checkpoint_dir=self.checkpoint_path,
                 logdir=self.eval_dir,
                 num_evals=num_batches,
-                eval_op=list(names_to_updates.values()),
+                eval_op=flatten(list(names_to_updates.values())),
                 variables_to_restore=variables_to_restore,
                 eval_interval_secs=60*60*2,
                 session_config=config,
@@ -120,7 +130,22 @@ class EvaluateModel(PrepareData):
         parser.add_argument('-t', '--train',  help='evaluate aginst train dataset',  action='store_true')
         parser.add_argument('-l', '--loop',  help='evaluate checkpoints by loops',  action='store_true')
         parser.add_argument('-c', '--checkpoint',  help='evaluate a specific checkpoint',  default="")
+        parser.add_argument('-a', "--num_intra_threads", type=int, help="Specify the number of threads within the layer", dest="num_intra_threads", default=None)
+        parser.add_argument('-e', "--num_inter_threads", type=int, help='Specify the number threads between layers', dest="num_inter_threads", default=None)
+        parser.add_argument('-m', "--mkl", help='Specify to use mkl on cpu or not', dest="mkl", default=False)
         args = parser.parse_args()
+        
+        self.num_inter_threads = args.num_inter_threads
+        self.num_intra_threads = args.num_intra_threads
+        self.mkl = args.mkl
+        
+        # Sets environment variables for MKL
+        if self.mkl:
+           os.environ['KMP_BLOCKTIME'] = str(self.kmp_blocktime)
+           os.environ['KMP_SETTINGS'] = str(self.kmp_settings)
+           os.environ['KMP_AFFINITY'] = self.kmp_affinity
+        if self.num_intra_threads > 0:
+           os.environ['OMP_NUM_THREADS'] = str(self.num_intra_threads)
         
         self.checkpoint_path = './logs/'
         self.finetune = args.finetune

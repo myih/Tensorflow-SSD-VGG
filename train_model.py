@@ -5,7 +5,7 @@ from __future__ import print_function
 import os
 import sys
 import time
-
+import argparse
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
@@ -59,9 +59,12 @@ class TrainModel(PrepareData):
         self.save_interval_secs = 60*60#one hour
         self.save_summaries_secs= 60
 
-        
-        
-        
+        self.num_inter_threads = 0
+        self.num_intra_threads = 0
+        self.mkl = False 
+        self.kmp_blocktime = 1
+        self.kmp_affinity = 'granularity=fine,verbose,compact,1,0'
+        self.kmp_settings = 1
         
         self.label_smoothing = 0
         return
@@ -179,7 +182,7 @@ class TrainModel(PrepareData):
         image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_voc_2007_2012_train_data()
         
         #get model outputs
-        predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay, is_training=True)
+        predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay, is_training=True, data_format= self.data_format)
         
         #get model training losss
         total_loss = g_ssd_model.get_losses(logits, localisations, gclasses, localizations, gscores)
@@ -203,7 +206,9 @@ class TrainModel(PrepareData):
         
         gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
         config = tf.ConfigProto(log_device_placement=False,
-                                gpu_options=gpu_options)
+                                gpu_options=gpu_options,
+                                inter_op_parallelism_threads=self.num_inter_threads,
+                                intra_op_parallelism_threads=self.num_intra_threads)
         
         ###########################
         # Kicks off the training. #
@@ -218,7 +223,7 @@ class TrainModel(PrepareData):
                 number_of_steps=self.max_number_of_steps,
                 log_every_n_steps=self.log_every_n_steps,
                 save_summaries_secs=self.save_summaries_secs,
-#                 session_config=config,
+                session_config=config,
                 save_interval_secs=self.save_interval_secs)
         
         
@@ -388,9 +393,28 @@ class TrainModel(PrepareData):
                 checkpoint_path,
                 variables_to_restore,
                 ignore_missing_vars=self.ignore_missing_vars)
-    
+
+    def parse_param(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-a', "--num_intra_threads", type=int, help="Specify the number of threads within the layer", dest="num_intra_threads", default=None)
+        parser.add_argument('-e', "--num_inter_threads", type=int, help='Specify the number threads between layers', dest="num_inter_threads", default=None)
+        parser.add_argument('-m', "--mkl", help='Specify to use mkl on cpu or not', dest="mkl", default=False)
+        args = parser.parse_args()
+        self.num_inter_threads = args.num_inter_threads
+        self.num_intra_threads = args.num_intra_threads
+        self.mkl = args.mkl
+
+        # Sets environment variables for MKL
+        if self.mkl:
+           os.environ['KMP_BLOCKTIME'] = str(self.kmp_blocktime)
+           os.environ['KMP_SETTINGS'] = str(self.kmp_settings)
+           os.environ['KMP_AFFINITY'] = self.kmp_affinity
+        if self.num_intra_threads > 0:
+           os.environ['OMP_NUM_THREADS'] = str(self.num_intra_threads)
+
     def run(self):
-        
+
+        self.parse_param()
         #fine tune the new parameters
         self.train_dir = './logs'
         
