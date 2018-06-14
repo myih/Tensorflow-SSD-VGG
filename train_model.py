@@ -425,7 +425,7 @@ class TrainModel(PrepareData):
         
         
         self.max_number_of_steps = 30000
-        self.log_every_n_steps = 10
+        self.log_every_n_steps = 100
         
         self.learning_rate = 0.1
         self.learning_rate_decay_type = 'fixed'
