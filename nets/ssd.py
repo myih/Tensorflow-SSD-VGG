@@ -215,7 +215,7 @@ class SSDModel():
             with slim.arg_scope([slim.conv2d],
                             activation_fn=None, data_format=data_format):
                 with slim.arg_scope([slim.batch_norm],
-                            activation_fn=tf.nn.relu, is_training=is_training,updates_collections=None，
+                            activation_fn=tf.nn.relu, is_training=is_training,updates_collections=None,
                             data_format=data_format):
                     with slim.arg_scope([slim.dropout],
                             is_training=is_training,keep_prob=keep_prob):
