@@ -19,7 +19,7 @@ import math
 class PrepareData():
     def __init__(self):
         
-        self.batch_size = 32
+        self.batch_size = 8
         self.labels_offset = 0
         
         
@@ -168,15 +168,29 @@ class PrepareData():
     def get_voc_2007_2012_train_data(self,is_training_data=True):
         data_sources = "../data/voc/tfrecords/voc_train*.tfrecord"
         num_samples = pascalvoc_datasets.DATASET_SIZE['2007_train'] + pascalvoc_datasets.DATASET_SIZE['2012_train']
-        
+
         return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
     def get_voc_2007_test_data(self):
         data_sources = "../data/voc/tfrecords/voc_test_2007*.tfrecord"
         num_samples = pascalvoc_datasets.DATASET_SIZE['2007_test']
         
         return self.__get_images_labels_bboxes(data_sources, num_samples, False)
-    
+    def get_gtsdb_train_data(self,is_training_data=True):
+        data_sources = "../GTSDB/tfrecords/gtsdb_train*.tfrecord"
+        num_samples = 588
         
+        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
+    def get_gtsdb_test_data(self,is_training_data=False):
+        data_sources = "../GTSDB/tfrecords/gtsdb_test*.tfrecord"
+        num_samples = 153
+        
+        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
+    def get_gtsdb_original_data(self,is_training_data=False):
+        data_sources = "../GTSDB/tfrecords_old/gtsdb*.tfrecord"
+        num_samples = 506
+
+        return self.__get_images_labels_bboxes(data_sources, num_samples, is_training_data)
+
     def iterate_file_name(self, batch_data):
         
         num_batches = 1*math.ceil(self.dataset.num_samples / float(self.batch_size))
@@ -223,8 +237,8 @@ class PrepareData():
 #             batch_data= self.get_voc_2007_train_data(is_training_data=True)
 #             batch_data = self.get_voc_2007_test_data()
 #             batch_data = self.get_voc_2012_train_data()
-            batch_data = self.get_voc_2007_2012_train_data(is_training_data = True)
-
+#            batch_data = self.get_voc_2007_2012_train_data(is_training_data = True)
+            batch_data = self.get_gtsdb_train_data(is_training_data = True)
 
             return self.iterate_file_name(batch_data)
            

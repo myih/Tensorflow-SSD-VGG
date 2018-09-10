@@ -10,16 +10,25 @@ import time
 from postprocessingdata import g_post_processing_data
 import argparse
 
+def flatten(x): 
+        result = [] 
+        for el in x: 
+            if isinstance(el, tuple): 
+                result.extend(flatten(el))
+            else: 
+                result.append(el) 
+        return result
+
 class EvaluateModel(PrepareData):
     def __init__(self):
         PrepareData.__init__(self)
         
         
-        self.batch_size = 32
+        self.batch_size = 8
         self.labels_offset = 0
         self.eval_image_size = None
         self.preprocessing_name = None
-        self.model_name = 'inception_v3'
+        self.model_name = 'vgg-ssd'
         
         self.num_preprocessing_threads = 4
         
@@ -41,11 +50,11 @@ class EvaluateModel(PrepareData):
             gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
         
         if self.eval_train:
-            image, _, glabels,gbboxes,gdifficults, _, _, _ = self.get_voc_2007_train_data(is_training_data=False)
-            self.eval_dir = './logs/evals/train_data'
+            image, _, glabels,gbboxes,gdifficults, _, _, _ = self.get_gtsdb_train_data(is_training_data=True)
+            self.eval_dir = '../GTSDB/logs/evals/train_data'
         else:
-            image, _, glabels,gbboxes,gdifficults, _, _, _ = self.get_voc_2007_test_data()
-            self.eval_dir = './logs/evals/test_data'
+            image, _, glabels,gbboxes,gdifficults, _, _, _ = self.get_gtsdb_test_data()
+            self.eval_dir = '../GTSDB/logs/evals/test_data'
             
         
        
@@ -83,7 +92,7 @@ class EvaluateModel(PrepareData):
                 checkpoint_path=checkpoint_file,
                 logdir=self.eval_dir,
                 num_evals=num_batches,
-                eval_op=list(names_to_updates.values()) ,
+                eval_op=flatten(list(names_to_updates.values())) ,
                 session_config=config,
                 variables_to_restore=variables_to_restore)
             # Log time spent.
@@ -99,7 +108,7 @@ class EvaluateModel(PrepareData):
                 checkpoint_dir=self.checkpoint_path,
                 logdir=self.eval_dir,
                 num_evals=num_batches,
-                eval_op=list(names_to_updates.values()),
+                eval_op=flatten(list(names_to_updates.values())),
                 variables_to_restore=variables_to_restore,
                 eval_interval_secs=60*60*2,
                 session_config=config,
@@ -122,10 +131,10 @@ class EvaluateModel(PrepareData):
         parser.add_argument('-c', '--checkpoint',  help='evaluate a specific checkpoint',  default="")
         args = parser.parse_args()
         
-        self.checkpoint_path = './logs/'
+        self.checkpoint_path = '../GTSDB/logs/'
         self.finetune = args.finetune
         if args.finetune:
-            self.checkpoint_path = './logs/finetune/'
+            self.checkpoint_path = '../GTSDB/logs/finetune/'
         if args.checkpoint != "":
             self.checkpoint_path = args.checkpoint
             
@@ -140,7 +149,7 @@ class EvaluateModel(PrepareData):
         self.parse_param()
         
         if self.eval_during_training:
-            self.batch_size = 16
+            self.batch_size = 8
             #To evaluate while trainin going on
             with tf.device('/device:CPU:0'):      
                 self.__setup_eval()

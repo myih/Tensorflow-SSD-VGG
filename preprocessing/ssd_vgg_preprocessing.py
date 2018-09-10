@@ -34,14 +34,14 @@ Resize = IntEnum('Resize', ('NONE',                # Nothing!
                             'WARP_RESIZE'))        # Warp resize.
 
 # VGG mean parameters.
-_R_MEAN = 123.
-_G_MEAN = 117.
-_B_MEAN = 104.
+_R_MEAN = 125.
+_G_MEAN = 127.
+_B_MEAN = 130.
 
 # Some training pre-processing parameters.
 BBOX_CROP_OVERLAP = 0.4        # Minimum overlap to keep a bbox after cropping.
 CROP_RATIO_RANGE = (0.8, 1.2)  # Distortion ratio during cropping.
-EVAL_SIZE = (300, 300)
+EVAL_SIZE = (300, 510)
 
 
 def tf_image_whitened(image, means=[_R_MEAN, _G_MEAN, _B_MEAN]):

@@ -54,7 +54,7 @@ class TrainModel(PrepareData):
         self.checkpoint_exclude_scopes = None
         self.ignore_missing_vars = False
         
-        self.batch_size= 32
+        self.batch_size= 8
         
         self.save_interval_secs = 60*60#one hour
         self.save_summaries_secs= 60
@@ -176,7 +176,7 @@ class TrainModel(PrepareData):
         tf.logging.set_verbosity(tf.logging.INFO)
         
         #get batched training training data 
-        image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_voc_2007_2012_train_data()
+        image, filename,glabels,gbboxes,gdifficults,gclasses, localizations, gscores = self.get_gtsdb_train_data()
         
         #get model outputs
         predictions, localisations, logits, end_points = g_ssd_model.get_model(image, weight_decay=self.weight_decay, is_training=True)
@@ -192,6 +192,8 @@ class TrainModel(PrepareData):
         variables_to_train = self.__get_variables_to_train()
         
         learning_rate = self.__configure_learning_rate(self.dataset.num_samples, global_step)
+
+
         optimizer = self.__configure_optimizer(learning_rate)
         
         
@@ -275,7 +277,7 @@ class TrainModel(PrepareData):
                                                                                     run_metadata=run_metadata)
         time_elapsed = time.time() - start_time
         
-#         self.debug_training(sess,global_step)
+        self.debug_training(sess,global_step)
         
     
         if run_metadata is not None:
@@ -392,34 +394,37 @@ class TrainModel(PrepareData):
     def run(self):
         
         #fine tune the new parameters
-        self.train_dir = './logs'
+        #self.train_dir = './logs'
+        self.train_dir = '../GTSDB/logs'
         
         
         self.checkpoint_path = '../data/trained_models/vgg16/vgg_16.ckpt'
         self.checkpoint_exclude_scopes = g_ssd_model.model_name
         self.trainable_scopes = g_ssd_model.model_name
+        #self.checkpoint_exclude_scopes = None
+        #self.trainable_scopes = "{},vgg_16".format(g_ssd_model.model_name)
+
         
-        
-        self.max_number_of_steps = 30000
+        self.max_number_of_steps =6000
         self.log_every_n_steps = 100
         
-        self.learning_rate = 0.1
+        self.learning_rate = 0.1	
         self.learning_rate_decay_type = 'fixed'
         
         
         self.optimizer = 'adam'
         self.weight_decay = 0.0005 # for model regularization
         
-        self.fine_tune_vgg16 = True
-        
+        self.fine_tune_vgg16 = False
+
         if self.fine_tune_vgg16:  
             #fine tune all parameters
-            self.train_dir = './logs/finetune'
-            self.checkpoint_path =  './logs'
+            self.train_dir = '../GTSDB/logs/finetune'
+            self.checkpoint_path =  '../GTSDB/logs'
             self.checkpoint_exclude_scopes = None
             self.trainable_scopes = "{},vgg_16".format(g_ssd_model.model_name)
-            self.max_number_of_steps = 130000
-            self.learning_rate=0.0005
+            self.max_number_of_steps = 160000
+            self.learning_rate=0.01
 
        
         

@@ -30,24 +30,24 @@ class SSDModel():
 #         self.anchor_size_bounds=[0.15, 0.90],
         #Configuration used to assign ground truth information to the model outputs that corresponds to all default boxes
         #the first element is the scale for this feature layer
-        self.img_shape=(300, 300)
-        self.num_classes=21
-        self.no_annotation_label=21
+        self.img_shape=(300, 510)
+        self.num_classes=43
+        self.no_annotation_label=43
         self.feat_layers=['block4', 'block7', 'block8', 'block9', 'block10', 'block11']
-        self.feat_shapes=[(38, 38), (19, 19), (10, 10), (5, 5), (3, 3), (1, 1)]
-        self.anchor_sizes=[(21., 45.),  #the first element is the scale for current layer, in this case, it's 21
-                      (45., 99.),
-                      (99., 153.),
-                      (153., 207.),
-                      (207., 261.),
-                      (261., 315.)]
+        self.feat_shapes=[(38, 64), (19, 32), (10, 16), (5, 8), (3, 6), (1, 4)]
+        self.anchor_sizes=[(15., 30.),  #the first element is the scale for current layer, in this case, it's 21
+                      (30., 60.),
+                      (60., 90.),
+                      (90., 120.),
+                      (120., 150.),
+                      (150., 180.)]
        
-        self.anchor_ratios=[[2, .5],
-                       [2, .5, 3, 1./3],
-                       [2, .5, 3, 1./3],
-                       [2, .5, 3, 1./3],
-                       [2, .5],
-                       [2, .5]]
+        self.anchor_ratios=[[1],
+                       [1],
+                       [1],
+                       [1],
+                       [1],
+                       [1]]
         # the ration between input image size and feature layer size
         #it's used to map x and y of default box from feature layer to input layer
         #to determine the position of default boxes
@@ -74,8 +74,8 @@ class SSDModel():
         #post processing
         self.select_threshold = 0.01
         self.nms_threshold = 0.45
-        self.select_top_k = 400
-        self.keep_top_k = 200
+        self.select_top_k = 100 #400
+        self.keep_top_k = 100 #200
         
         return
     def __dropout(self,net):
@@ -892,18 +892,19 @@ class SSDModel():
             pmask = gclasses > 0
             fpmask = tf.cast(pmask, dtype)
             n_positives = tf.reduce_sum(fpmask)
-    
+
             # Hard negative mining...
             #for no_classes, we only care that false positive's label is 0
             #this is why pmask sufice our needs
             no_classes = tf.cast(pmask, tf.int32)
             predictions = slim.softmax(logits)
             nmask = tf.logical_not(pmask)
-            
             fnmask = tf.cast(nmask, dtype)
+
             nvalues = tf.where(nmask,
                                predictions[:, 0],
                                1. - fnmask)
+
             nvalues_flat = tf.reshape(nvalues, [-1])
             # Number of negative entries to select.
             max_neg_entries = tf.cast(tf.reduce_sum(fnmask), tf.int32)
